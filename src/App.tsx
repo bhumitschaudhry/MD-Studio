@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { core } from "@tauri-apps/api";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -68,6 +69,41 @@ export function App() {
     };
     reader.readAsText(file);
   }, []);
+
+  const loadFileFromPath = useCallback(async (path: string) => {
+    const normalized = path.trim().replace(/^\"|\"$/g, "");
+    const name = normalized.split(/[\\/]/).pop() || normalized;
+
+    try {
+      const content = await core.invoke<string>("read_markdown_file", { path: normalized });
+      setMarkdown(content);
+      setOriginalMarkdown(content);
+      setFileName(name);
+    } catch (error) {
+      console.error("Failed to open markdown file:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    core
+      .invoke<string[]>("take_open_files")
+      .then((paths) => {
+        if (cancelled || !paths?.length) {
+          return;
+        }
+
+        return loadFileFromPath(paths[0]);
+      })
+      .catch((error) => {
+        console.error("Failed to read startup file list:", error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [loadFileFromPath]);
 
   const handleFileSelect = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
