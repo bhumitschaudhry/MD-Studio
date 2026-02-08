@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { core } from "@tauri-apps/api";
+import { open, save } from "@tauri-apps/api/dialog";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -54,10 +55,21 @@ export function App() {
   const [markdown, setMarkdown] = useState<string>(SAMPLE_MARKDOWN);
   const [originalMarkdown, setOriginalMarkdown] = useState<string>(SAMPLE_MARKDOWN);
   const [fileName, setFileName] = useState<string>("sample.md");
+  const [filePath, setFilePath] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<{
+    text: string;
+    tone: "success" | "error";
+  } | null>(null);
 
   const hasChanges = markdown !== originalMarkdown;
+  const canSave = hasChanges || !filePath;
+
+  const extractName = useCallback((pathValue: string) => {
+    const normalized = pathValue.trim().replace(/^\"|\"$/g, "");
+    return normalized.split(/[\\/]/).pop() || normalized;
+  }, []);
 
   const handleFileRead = useCallback((file: File) => {
     const reader = new FileReader();
@@ -66,23 +78,35 @@ export function App() {
       setMarkdown(content);
       setOriginalMarkdown(content);
       setFileName(file.name);
+      setFilePath(null);
     };
     reader.readAsText(file);
   }, []);
 
-  const loadFileFromPath = useCallback(async (path: string) => {
-    const normalized = path.trim().replace(/^\"|\"$/g, "");
-    const name = normalized.split(/[\\/]/).pop() || normalized;
+  const loadFileFromPath = useCallback(
+    async (path: string) => {
+      const normalized = path.trim().replace(/^\"|\"$/g, "");
+      const name = extractName(normalized);
 
-    try {
-      const content = await core.invoke<string>("read_markdown_file", { path: normalized });
-      setMarkdown(content);
-      setOriginalMarkdown(content);
-      setFileName(name);
-    } catch (error) {
-      console.error("Failed to open markdown file:", error);
-    }
-  }, []);
+      try {
+        const content = await core.invoke<string>("read_markdown_file", {
+          path: normalized,
+        });
+        setMarkdown(content);
+        setOriginalMarkdown(content);
+        setFileName(name);
+        setFilePath(normalized);
+        setStatusMessage(null);
+      } catch (error) {
+        console.error("Failed to open markdown file:", error);
+        setStatusMessage({
+          text: "Failed to open file. Check the console for details.",
+          tone: "error",
+        });
+      }
+    },
+    [extractName]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -130,25 +154,85 @@ export function App() {
       e.preventDefault();
       setIsDragging(false);
       const file = e.dataTransfer.files?.[0];
-      if (file && file.name.endsWith(".md")) {
+      if (file && file.name.match(/\.(md|markdown|txt)$/i)) {
         handleFileRead(file);
       }
     },
     [handleFileRead]
   );
 
-  const handleSave = useCallback(() => {
-    const blob = new Blob([markdown], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setOriginalMarkdown(markdown);
-  }, [markdown, fileName]);
+  const handleOpenDialog = useCallback(async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [{ name: "Markdown", extensions: ["md", "markdown", "txt"] }],
+      });
+      if (!selected) {
+        return;
+      }
+      const path = Array.isArray(selected) ? selected[0] : selected;
+      await loadFileFromPath(path);
+    } catch (error) {
+      console.error("Failed to open file dialog:", error);
+      setStatusMessage({ text: "Failed to open the file dialog.", tone: "error" });
+    }
+  }, [loadFileFromPath]);
+
+  const handleSaveAs = useCallback(async () => {
+    try {
+      const target = await save({
+        defaultPath: fileName,
+        filters: [{ name: "Markdown", extensions: ["md", "markdown", "txt"] }],
+      });
+      if (!target) {
+        return;
+      }
+
+      await core.invoke("write_markdown_file", {
+        path: target,
+        contents: markdown,
+      });
+
+      setFilePath(target);
+      setFileName(extractName(target));
+      setOriginalMarkdown(markdown);
+      setStatusMessage({ text: "Saved.", tone: "success" });
+    } catch (error) {
+      console.error("Failed to save markdown file:", error);
+      setStatusMessage({
+        text: "Failed to save file. Check the console for details.",
+        tone: "error",
+      });
+    }
+  }, [extractName, fileName, markdown]);
+
+  const handleSave = useCallback(async () => {
+    if (!filePath) {
+      await handleSaveAs();
+      return;
+    }
+
+    try {
+      await core.invoke("write_markdown_file", {
+        path: filePath,
+        contents: markdown,
+      });
+      setOriginalMarkdown(markdown);
+      setStatusMessage({ text: "Saved.", tone: "success" });
+    } catch (error) {
+      console.error("Failed to save markdown file:", error);
+      setStatusMessage({
+        text: "Failed to save file. Check the console for details.",
+        tone: "error",
+      });
+    }
+  }, [filePath, handleSaveAs, markdown]);
+
+  useEffect(() => {
+    if (statusMessage?.tone === "success" && hasChanges) {
+      setStatusMessage(null);
+    }
+  }, [hasChanges, statusMessage]);
 
   return (
     <div
@@ -161,9 +245,29 @@ export function App() {
       <header className="sticky top-0 z-10 border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <div className="flex-1">
-            <label className="inline-flex cursor-pointer items-center gap-2 border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 rounded">
+            <div className="inline-flex items-center gap-3">
+              <button
+                type="button"
+                onClick={handleOpenDialog}
+                className="inline-flex cursor-pointer items-center gap-2 border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 rounded"
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  />
+                </svg>
+                Open
+              </button>
               <svg
-                className="h-4 w-4"
+                className="h-4 w-4 text-gray-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -172,17 +276,32 @@ export function App() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={1.5}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  d="M12 4v16m8-8H4"
                 />
               </svg>
-              Open
-              <input
-                type="file"
-                accept=".md,.markdown,.txt"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-            </label>
+              <label className="inline-flex cursor-pointer items-center gap-2 border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 rounded">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                  />
+                </svg>
+                Import
+                <input
+                  type="file"
+                  accept=".md,.markdown,.txt"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+              </label>
+            </div>
           </div>
 
           <div className="text-center">
@@ -191,31 +310,40 @@ export function App() {
           </div>
 
           <div className="flex-1 flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={!hasChanges}
-              className={cn(
-                "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded transition-colors",
-                hasChanges
-                  ? "bg-gray-900 text-white hover:bg-gray-800"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
-              )}
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSaveAs}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded border border-gray-300 text-gray-700 transition-colors hover:bg-gray-50"
+                type="button"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
-                />
-              </svg>
-              Save
-            </button>
+                Save As
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={!canSave}
+                className={cn(
+                  "inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded transition-colors",
+                  canSave
+                    ? "bg-gray-900 text-white hover:bg-gray-800"
+                    : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                )}
+              >
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                  />
+                </svg>
+                Save
+              </button>
+            </div>
           </div>
         </div>
 
@@ -354,9 +482,30 @@ export function App() {
                 Unsaved changes
               </span>
             )}
+            {statusMessage && (
+              <span className="inline-flex items-center gap-1.5 mr-4">
+                <span
+                  className={cn(
+                    "w-2 h-2 rounded-full",
+                    statusMessage.tone === "success"
+                      ? "bg-emerald-500"
+                      : "bg-red-500"
+                  )}
+                ></span>
+                {statusMessage.text}
+              </span>
+            )}
             Drag and drop a{" "}
             <code className="bg-gray-100 px-1.5 py-0.5 text-xs text-gray-700 rounded">
               .md
+            </code>{" "}
+            ,{" "}
+            <code className="bg-gray-100 px-1.5 py-0.5 text-xs text-gray-700 rounded">
+              .markdown
+            </code>
+            , or{" "}
+            <code className="bg-gray-100 px-1.5 py-0.5 text-xs text-gray-700 rounded">
+              .txt
             </code>{" "}
             file anywhere or use the Open button
           </p>

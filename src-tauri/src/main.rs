@@ -16,6 +16,12 @@ fn read_markdown_file(path: String) -> Result<String, String> {
   std::fs::read_to_string(normalized).map_err(|err| err.to_string())
 }
 
+#[tauri::command]
+fn write_markdown_file(path: String, contents: String) -> Result<(), String> {
+  let normalized = path.trim_matches('"');
+  std::fs::write(normalized, contents).map_err(|err| err.to_string())
+}
+
 fn main() {
   let args: Vec<String> = std::env::args()
     .skip(1)
@@ -27,7 +33,11 @@ fn main() {
 
   tauri::Builder::default()
     .manage(OpenFiles(Mutex::new(args)))
-    .invoke_handler(tauri::generate_handler![take_open_files, read_markdown_file])
+    .invoke_handler(tauri::generate_handler![
+      take_open_files,
+      read_markdown_file,
+      write_markdown_file
+    ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
