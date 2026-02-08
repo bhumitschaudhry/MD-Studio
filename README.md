@@ -2,9 +2,15 @@
 
 MD Studio is a desktop markdown editor built with React, Vite, and Tauri.
 
+![Latest Release](https://img.shields.io/github/v/release/bhumitschaudhry/MD-Studio?sort=semver)
+
+Release page: https://github.com/bhumitschaudhry/MD-Studio/releases/latest
+
 ## Stable Downloads
 
-These links point to local build artifacts generated in this repo after running `npm run tauri build`.
+These links download the latest Windows installers from GitHub Releases.
 
-- Windows (NSIS `.exe`): [MD Studio 0.1.0 Setup](src-tauri/target/release/bundle/nsis/MD%20Studio_0.1.0_x64-setup.exe)
-- Windows (MSI): [MD Studio 0.1.0 MSI](src-tauri/target/release/bundle/msi/MD%20Studio_0.1.0_x64_en-US.msi)
+- Windows (NSIS `.exe`): [MD Studio 0.1.0 Setup](https://github.com/bhumitschaudhry/MD-Studio/releases/latest/download/MD%20Studio_0.1.0_x64-setup.exe)
+- Windows (MSI): [MD Studio 0.1.0 MSI](https://github.com/bhumitschaudhry/MD-Studio/releases/latest/download/MD%20Studio_0.1.0_x64_en-US.msi)
+
+If you publish a new version, update the filenames here to match the release assets.
