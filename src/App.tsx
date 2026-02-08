@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { core } from "@tauri-apps/api";
-import { open, save } from "@tauri-apps/api/dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";

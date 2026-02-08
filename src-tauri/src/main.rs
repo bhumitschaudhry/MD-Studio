@@ -33,6 +33,7 @@ fn main() {
 
   tauri::Builder::default()
     .manage(OpenFiles(Mutex::new(args)))
+    .plugin(tauri_plugin_dialog::init())
     .invoke_handler(tauri::generate_handler![
       take_open_files,
       read_markdown_file,
