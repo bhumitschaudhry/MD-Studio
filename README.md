@@ -14,3 +14,8 @@ These links download the latest Windows installers from GitHub Releases.
 - Windows (MSI): [MD Studio 0.1.0 MSI](https://github.com/bhumitschaudhry/MD-Studio/releases/latest/download/MD%20Studio_0.1.0_x64_en-US.msi)
 
 If you publish a new version, update the filenames here to match the release assets.
+
+## Local Builds
+
+Tauri bundles are produced under src-tauri/target/release/bundle/ after running a release build.
+If you want to keep artifacts in-repo, copy the .exe and .msi into eleases/ and commit them.
