@@ -17,5 +17,5 @@ If you publish a new version, update the filenames here to match the release ass
 
 ## Local Builds
 
-Tauri bundles are produced under src-tauri/target/release/bundle/ after running a release build.
-If you want to keep artifacts in-repo, copy the .exe and .msi into eleases/ and commit them.
+Tauri bundles are produced under `src-tauri/target/release/bundle/` after running a release build.
+If you want to keep artifacts in-repo, copy the `.exe` and `.msi` into `releases/` and commit them.
