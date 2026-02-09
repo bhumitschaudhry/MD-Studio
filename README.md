@@ -10,8 +10,8 @@ Release page: https://github.com/bhumitschaudhry/MD-Studio/releases/latest
 
 These links download the latest Windows installers from GitHub Releases.
 
-- Windows (NSIS `.exe`): [MD Studio 1.0.2 Setup](https://github.com/bhumitschaudhry/MD-Studio/blob/master/releases/MD%20Studio_1.0.2_x64-setup.exe)
-- Windows (MSI): [MD Studio 1.0.2 MSI](https://github.com/bhumitschaudhry/MD-Studio/blob/master/releases/MD%20Studio_1.0.2_x64_en-US.msi)
+- Windows (NSIS `.exe`): [MD Studio 1.0.3 Setup](https://github.com/bhumitschaudhry/MD-Studio/blob/master/releases/MD%20Studio_1.0.3_x64-setup.exe)
+- Windows (MSI): [MD Studio 1.0.3 MSI](https://github.com/bhumitschaudhry/MD-Studio/blob/master/releases/MD%20Studio_1.0.3_x64_en-US.msi)
 
 If you publish a new version, update the filenames here to match the release assets.
 
@@ -19,3 +19,4 @@ If you publish a new version, update the filenames here to match the release ass
 
 Tauri bundles are produced under `src-tauri/target/release/bundle/` after running a release build.
 If you want to keep artifacts in-repo, copy the `.exe` and `.msi` into `releases/` and commit them.
+
