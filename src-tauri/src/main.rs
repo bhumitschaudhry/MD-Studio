@@ -27,7 +27,11 @@ fn main() {
     .skip(1)
     .filter(|arg| {
       let lower = arg.to_lowercase();
-      lower.ends_with(".md") || lower.ends_with(".markdown")
+      lower.ends_with(".md")
+        || lower.ends_with(".markdown")
+        || lower.ends_with(".mdown")
+        || lower.ends_with(".mkd")
+        || lower.ends_with(".mkdn")
     })
     .collect();
 

@@ -3,9 +3,12 @@ import { core } from "@tauri-apps/api";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { cn } from "./utils/cn";
+import "katex/dist/katex.min.css";
 
 const SAMPLE_MARKDOWN = `# Welcome to MD Studio
 
@@ -47,6 +50,16 @@ Check out [GitHub](https://github.com) for more information.
 > **Note:** Switch between Edit and Preview modes using the tabs above!
 
 ---
+
+## LaTeX
+
+Inline: $E = mc^2$
+
+Block:
+
+$$
+\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}
+$$
 
 *Start editing or open your own markdown file!*
 `;
@@ -440,7 +453,8 @@ export function App() {
             )}
           >
             <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
+              remarkPlugins={[remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeKatex]}
               components={{
                 code({ className, children, ...props }) {
                   const match = /language-(\w+)/.exec(className || "");
