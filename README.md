@@ -10,8 +10,8 @@ Release page: https://github.com/bhumitschaudhry/MD-Studio/releases/latest
 
 These links download the latest Windows installers from GitHub Releases.
 
-- Windows (NSIS `.exe`): [MD Studio 1.0.1 Setup](https://github.com/bhumitschaudhry/MD-Studio/blob/master/releases/MD%20Studio_1.0.1_x64-setup.exe)
-- Windows (MSI): [MD Studio 1.0.1 MSI](https://github.com/bhumitschaudhry/MD-Studio/blob/master/releases/MD%20Studio_1.0.1_x64_en-US.msi)
+- Windows (NSIS `.exe`): [MD Studio 1.0.2 Setup](https://github.com/bhumitschaudhry/MD-Studio/blob/master/releases/MD%20Studio_1.0.2_x64-setup.exe)
+- Windows (MSI): [MD Studio 1.0.2 MSI](https://github.com/bhumitschaudhry/MD-Studio/blob/master/releases/MD%20Studio_1.0.2_x64_en-US.msi)
 
 If you publish a new version, update the filenames here to match the release assets.
 

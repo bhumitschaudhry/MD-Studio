@@ -237,6 +237,23 @@ export function App() {
     }
   }, [hasChanges, statusMessage]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isSaveCombo =
+        (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "s";
+      if (!isSaveCombo) {
+        return;
+      }
+      event.preventDefault();
+      void handleSave();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleSave]);
+
   return (
     <div
       className="min-h-screen bg-gray-50"
